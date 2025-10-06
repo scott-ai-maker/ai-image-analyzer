@@ -41,19 +41,19 @@ class ComputerVisionService:
         self.settings = settings
         self.client: Optional[ComputerVisionClient] = None
         self.http_client = httpx.AsyncClient(
-            timeout=httpx.Timeout(settings.api.request_timeout_seconds)
+            timeout=httpx.Timeout(settings.request_timeout)
         )
         self._initialize_client()
 
     def _initialize_client(self) -> None:
         """Initialize the Azure Computer Vision client with proper authentication."""
         try:
-            endpoint = self.settings.azure.computer_vision_endpoint
+            endpoint = self.settings.azure_computer_vision_endpoint
             
             # Use managed identity if no key is provided
-            if self.settings.azure.computer_vision_key:
+            if self.settings.azure_computer_vision_key:
                 credentials = CognitiveServicesCredentials(
-                    self.settings.azure.computer_vision_key
+                    self.settings.azure_computer_vision_key
                 )
                 logger.info("Using subscription key authentication")
             else:
@@ -123,7 +123,7 @@ class ComputerVisionService:
             
             return detected_objects, image_metadata, processing_time
             
-        except ComputerVisionErrorException as e:
+        except HttpResponseError as e:
             error_msg = f"Azure Computer Vision error: {e.message}"
             logger.error(error_msg)
             raise ComputerVisionServiceError(error_msg, "AZURE_CV_ERROR") from e
@@ -189,7 +189,7 @@ class ComputerVisionService:
             
             return detected_objects, image_metadata, processing_time
             
-        except ComputerVisionErrorException as e:
+        except HttpResponseError as e:
             error_msg = f"Azure Computer Vision error: {e.message}"
             logger.error(error_msg)
             raise ComputerVisionServiceError(error_msg, "AZURE_CV_ERROR") from e
@@ -242,7 +242,7 @@ class ComputerVisionService:
             )
         
         # Check size limit
-        max_size = self.settings.api.max_image_size_mb * 1024 * 1024
+        max_size = self.settings.max_image_size_mb * 1024 * 1024
         if len(image_data) > max_size:
             raise ComputerVisionServiceError(
                 f"Image size ({len(image_data)} bytes) exceeds limit ({max_size} bytes)",
@@ -367,14 +367,14 @@ class ComputerVisionService:
             
             return {
                 "status": "healthy",
-                "endpoint": self.settings.azure.computer_vision_endpoint,
-                "authentication": "key" if self.settings.azure.computer_vision_key else "managed_identity"
+                "endpoint": self.settings.azure_computer_vision_endpoint,
+                "authentication": "key" if self.settings.azure_computer_vision_key else "managed_identity"
             }
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "error": str(e),
-                "endpoint": self.settings.azure.computer_vision_endpoint
+                "endpoint": self.settings.azure_computer_vision_endpoint
             }
 
     async def close(self) -> None:
