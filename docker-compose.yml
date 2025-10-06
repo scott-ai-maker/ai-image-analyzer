@@ -1,0 +1,84 @@
+# Docker Compose for local development
+
+version: '3.8'
+
+services:
+  ai-image-analyzer:
+    build: .
+    ports:
+      - "8000:8000"
+      - "9090:9090"  # Metrics port
+    environment:
+      # API Configuration
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_RELOAD=true
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=development
+      
+      # Azure Configuration (override with your values)
+      - AZURE_COMPUTER_VISION_ENDPOINT=${AZURE_COMPUTER_VISION_ENDPOINT}
+      - AZURE_COMPUTER_VISION_KEY=${AZURE_COMPUTER_VISION_KEY}
+      
+      # Performance Settings
+      - MAX_IMAGE_SIZE_MB=10
+      - CONCURRENT_REQUESTS=100
+      - REQUEST_TIMEOUT_SECONDS=30
+      
+      # Monitoring
+      - ENABLE_METRICS=true
+      - METRICS_PORT=9090
+    volumes:
+      # Mount source code for development (remove in production)
+      - ./src:/app/src
+      - ./main.py:/app/main.py
+      # Mount logs directory
+      - ./logs:/app/logs
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      - ai-analyzer-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Add monitoring services for production
+  prometheus:
+    image: prom/prometheus:latest
+    profiles: ["monitoring"]
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - ai-analyzer-network
+
+  grafana:
+    image: grafana/grafana:latest
+    profiles: ["monitoring"]
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./monitoring/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    networks:
+      - ai-analyzer-network
+
+networks:
+  ai-analyzer-network:
+    driver: bridge
+
+volumes:
+  grafana-storage:
