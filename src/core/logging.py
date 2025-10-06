@@ -11,7 +11,7 @@ from ..core.config import settings
 
 def setup_logging() -> FilteringBoundLogger:
     """Configure structured logging for the application.
-    
+
     Returns:
         Configured structured logger
     """
@@ -19,9 +19,9 @@ def setup_logging() -> FilteringBoundLogger:
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=getattr(logging, settings.api.log_level.upper())
+        level=getattr(logging, settings.api.log_level.upper()),
     )
-    
+
     # Configure structlog
     structlog.configure(
         processors=[
@@ -40,28 +40,26 @@ def setup_logging() -> FilteringBoundLogger:
             # Final processor: JSON in production, pretty in development
             structlog.dev.ConsoleRenderer(colors=settings.debug)
             if settings.debug
-            else structlog.processors.JSONRenderer()
+            else structlog.processors.JSONRenderer(),
         ],
         wrapper_class=structlog.stdlib.BoundLogger,
         logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     return structlog.get_logger()
 
 
 def add_context_processor(
-    logger: logging.Logger, 
-    method_name: str, 
-    event_dict: Dict[str, Any]
+    logger: logging.Logger, method_name: str, event_dict: Dict[str, Any]
 ) -> Dict[str, Any]:
     """Add contextual information to log records.
-    
+
     Args:
         logger: Logger instance
         method_name: Logging method name
         event_dict: Event dictionary
-        
+
     Returns:
         Enhanced event dictionary
     """
@@ -69,19 +67,19 @@ def add_context_processor(
     event_dict["service"] = "ai-image-analyzer"
     event_dict["version"] = "0.1.0"
     event_dict["environment"] = settings.environment
-    
+
     # Add correlation ID if available (would be set by middleware)
     # This is a placeholder for request correlation
     correlation_id = getattr(logger, "_correlation_id", None)
     if correlation_id:
         event_dict["correlation_id"] = correlation_id
-    
+
     return event_dict
 
 
 class LoggerMixin:
     """Mixin to add structured logging to classes."""
-    
+
     @property
     def logger(self) -> FilteringBoundLogger:
         """Get a bound logger for this class."""

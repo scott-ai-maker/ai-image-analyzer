@@ -1,0 +1,119 @@
+# Trivy security scanner configuration
+# Documentation: https://aquasecurity.github.io/trivy/latest/docs/
+
+# Scan settings
+scan:
+  # Skip files that match these patterns
+  skip-files:
+    - "**/.git/**"
+    - "**/node_modules/**" 
+    - "**/vendor/**"
+    - "**/.pytest_cache/**"
+    - "**/__pycache__/**"
+    - "**/htmlcov/**"
+    - "**/coverage.xml"
+    - "**/.coverage"
+    
+  # Skip directories
+  skip-dirs:
+    - .git
+    - node_modules
+    - vendor
+    - .pytest_cache
+    - __pycache__
+    - htmlcov
+    - .venv
+    - venv
+
+# Vulnerability scanning
+vulnerability:
+  # Vulnerability types to detect
+  type:
+    - os
+    - library
+  
+  # Ignore unfixed vulnerabilities
+  ignore-unfixed: false
+  
+  # Severity levels to report
+  severity:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+    - LOW
+  
+  # Ignore specific vulnerabilities (CVE IDs)
+  ignore:
+    # Example: CVE-2021-12345
+
+# Secret scanning  
+secret:
+  # Secret types to detect
+  type:
+    - api-key
+    - aws-access-key
+    - github-token
+    - private-key
+    - password
+  
+  # Skip secret detection in these paths
+  skip-paths:
+    - "**/.git/**"
+    - "**/tests/**"
+    - "**/*.md"
+    - "**/*.txt"
+    - "**/LICENSE"
+
+# License scanning
+license:
+  # Forbidden licenses
+  forbidden:
+    - GPL-3.0
+    - AGPL-3.0
+  
+  # Restricted licenses (warn but don't fail)
+  restricted:
+    - GPL-2.0
+    - LGPL-2.1
+
+# Misconfiguration scanning
+misconfiguration:
+  # File types to scan for misconfigurations
+  include:
+    - dockerfile
+    - kubernetes
+    - terraform
+    - cloudformation
+    - ansible
+  
+  # Policies to check
+  policy:
+    - opa
+    - rego
+  
+  # Severity levels
+  severity:
+    - CRITICAL
+    - HIGH
+    - MEDIUM
+    - LOW
+
+# Output settings
+format:
+  # Output format: table, json, sarif, template, cyclonedx, spdx
+  - table
+  - json
+  
+# Cache settings
+cache:
+  # Cache directory
+  dir: .trivy-cache
+  
+  # Clear cache before scan
+  clear: false
+
+# Timeout settings
+timeout: 5m
+
+# Exit code
+exit-code: 0  # Don't fail builds on vulnerabilities (CI will handle this)

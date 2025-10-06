@@ -9,16 +9,16 @@ from ..models.schemas import AnalysisError
 
 class BaseServiceError(Exception):
     """Base exception for service-level errors."""
-    
+
     def __init__(
-        self, 
-        message: str, 
-        error_code: str, 
+        self,
+        message: str,
+        error_code: str,
         details: Optional[Dict[str, Any]] = None,
-        correlation_id: Optional[str] = None
+        correlation_id: Optional[str] = None,
     ):
         """Initialize service error.
-        
+
         Args:
             message: Human-readable error message
             error_code: Machine-readable error code
@@ -34,101 +34,93 @@ class BaseServiceError(Exception):
 
 class ValidationError(BaseServiceError):
     """Exception for validation errors."""
-    
+
     def __init__(self, message: str, field: Optional[str] = None, **kwargs):
         """Initialize validation error.
-        
+
         Args:
             message: Error message
             field: Field that failed validation
             **kwargs: Additional arguments
         """
-        details = kwargs.get('details', {})
+        details = kwargs.get("details", {})
         if field:
-            details['field'] = field
-        
+            details["field"] = field
+
         super().__init__(
             message=message,
             error_code="VALIDATION_ERROR",
             details=details,
-            **{k: v for k, v in kwargs.items() if k != 'details'}
+            **{k: v for k, v in kwargs.items() if k != "details"},
         )
 
 
 class ExternalServiceError(BaseServiceError):
     """Exception for external service errors."""
-    
+
     def __init__(self, service: str, message: str, **kwargs):
         """Initialize external service error.
-        
+
         Args:
             service: Name of the external service
             message: Error message
             **kwargs: Additional arguments
         """
-        details = kwargs.get('details', {})
-        details['service'] = service
-        
+        details = kwargs.get("details", {})
+        details["service"] = service
+
         super().__init__(
             message=f"{service} error: {message}",
             error_code=f"{service.upper()}_ERROR",
             details=details,
-            **{k: v for k, v in kwargs.items() if k != 'details'}
+            **{k: v for k, v in kwargs.items() if k != "details"},
         )
 
 
 class RateLimitError(BaseServiceError):
     """Exception for rate limiting."""
-    
+
     def __init__(self, message: str = "Rate limit exceeded", **kwargs):
         """Initialize rate limit error.
-        
+
         Args:
             message: Error message
             **kwargs: Additional arguments
         """
-        super().__init__(
-            message=message,
-            error_code="RATE_LIMIT_EXCEEDED",
-            **kwargs
-        )
+        super().__init__(message=message, error_code="RATE_LIMIT_EXCEEDED", **kwargs)
 
 
 class ResourceNotFoundError(BaseServiceError):
     """Exception for resource not found errors."""
-    
+
     def __init__(self, resource: str, identifier: str, **kwargs):
         """Initialize resource not found error.
-        
+
         Args:
             resource: Type of resource
             identifier: Resource identifier
             **kwargs: Additional arguments
         """
-        details = kwargs.get('details', {})
-        details.update({
-            'resource': resource,
-            'identifier': identifier
-        })
-        
+        details = kwargs.get("details", {})
+        details.update({"resource": resource, "identifier": identifier})
+
         super().__init__(
             message=f"{resource} not found: {identifier}",
             error_code="RESOURCE_NOT_FOUND",
             details=details,
-            **{k: v for k, v in kwargs.items() if k != 'details'}
+            **{k: v for k, v in kwargs.items() if k != "details"},
         )
 
 
 def create_error_response(
-    error: Exception,
-    include_traceback: bool = False
+    error: Exception, include_traceback: bool = False
 ) -> AnalysisError:
     """Create standardized error response from exception.
-    
+
     Args:
         error: Exception to convert
         include_traceback: Whether to include stack trace
-        
+
     Returns:
         AnalysisError response model
     """
@@ -136,39 +128,37 @@ def create_error_response(
         # Use structured error information
         details = error.details.copy()
         if include_traceback:
-            details['traceback'] = traceback.format_exc()
-        
+            details["traceback"] = traceback.format_exc()
+
         return AnalysisError(
-            error_code=error.error_code,
-            error_message=error.message,
-            details=details
+            error_code=error.error_code, error_message=error.message, details=details
         )
-    
+
     else:
         # Handle unexpected errors
         details = {
-            'exception_type': type(error).__name__,
+            "exception_type": type(error).__name__,
         }
         if include_traceback:
-            details['traceback'] = traceback.format_exc()
-        
+            details["traceback"] = traceback.format_exc()
+
         return AnalysisError(
             error_code="INTERNAL_ERROR",
             error_message="An unexpected error occurred",
-            details=details
+            details=details,
         )
 
 
 def log_error(logger, error: Exception, context: Optional[Dict[str, Any]] = None):
     """Log error with appropriate level and context.
-    
+
     Args:
         logger: Logger instance
         error: Exception to log
         context: Additional context
     """
     context = context or {}
-    
+
     if isinstance(error, BaseServiceError):
         # Log service errors as warnings (expected errors)
         logger.warning(
@@ -176,7 +166,7 @@ def log_error(logger, error: Exception, context: Optional[Dict[str, Any]] = None
             error_code=error.error_code,
             correlation_id=error.correlation_id,
             details=error.details,
-            **context
+            **context,
         )
     else:
         # Log unexpected errors as errors
@@ -185,5 +175,5 @@ def log_error(logger, error: Exception, context: Optional[Dict[str, Any]] = None
             exception=str(error),
             exception_type=type(error).__name__,
             **context,
-            exc_info=True
+            exc_info=True,
         )

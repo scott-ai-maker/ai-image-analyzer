@@ -6,10 +6,10 @@ production environments and service tiers.
 """
 
 from ..core.error_handling import (
-    RetryConfig, 
-    CircuitBreakerConfig, 
+    RetryConfig,
+    CircuitBreakerConfig,
     RateLimitConfig,
-    RetryStrategy
+    RetryStrategy,
 )
 from azure.core.exceptions import HttpResponseError
 
@@ -24,19 +24,19 @@ AZURE_CV_PRODUCTION_CONFIG = {
         max_delay=60.0,
         exponential_base=2.0,
         jitter=True,
-        strategy=RetryStrategy.EXPONENTIAL_BACKOFF
+        strategy=RetryStrategy.EXPONENTIAL_BACKOFF,
     ),
     "circuit_breaker": CircuitBreakerConfig(
         failure_threshold=10,
         recovery_timeout=120.0,
         expected_exception=HttpResponseError,
-        half_open_max_calls=5
+        half_open_max_calls=5,
     ),
     "rate_limiter": RateLimitConfig(
         max_requests=100,  # Standard tier: 10 calls/second
         time_window=60.0,
-        burst_allowance=20
-    )
+        burst_allowance=20,
+    ),
 }
 
 # Development configuration (Free tier)
@@ -47,19 +47,19 @@ AZURE_CV_DEVELOPMENT_CONFIG = {
         max_delay=30.0,
         exponential_base=2.0,
         jitter=True,
-        strategy=RetryStrategy.EXPONENTIAL_BACKOFF
+        strategy=RetryStrategy.EXPONENTIAL_BACKOFF,
     ),
     "circuit_breaker": CircuitBreakerConfig(
         failure_threshold=5,
         recovery_timeout=60.0,
         expected_exception=HttpResponseError,
-        half_open_max_calls=3
+        half_open_max_calls=3,
     ),
     "rate_limiter": RateLimitConfig(
         max_requests=15,  # Free tier: 20 calls/minute (conservative)
         time_window=60.0,
-        burst_allowance=5
-    )
+        burst_allowance=5,
+    ),
 }
 
 # Staging configuration
@@ -70,40 +70,37 @@ AZURE_CV_STAGING_CONFIG = {
         max_delay=45.0,
         exponential_base=2.0,
         jitter=True,
-        strategy=RetryStrategy.EXPONENTIAL_BACKOFF
+        strategy=RetryStrategy.EXPONENTIAL_BACKOFF,
     ),
     "circuit_breaker": CircuitBreakerConfig(
         failure_threshold=7,
         recovery_timeout=90.0,
         expected_exception=HttpResponseError,
-        half_open_max_calls=4
+        half_open_max_calls=4,
     ),
     "rate_limiter": RateLimitConfig(
         max_requests=50,  # Intermediate rate limiting
         time_window=60.0,
-        burst_allowance=10
-    )
+        burst_allowance=10,
+    ),
 }
 
 # Configuration mapping by environment
 ERROR_HANDLING_CONFIGS = {
     "development": AZURE_CV_DEVELOPMENT_CONFIG,
     "staging": AZURE_CV_STAGING_CONFIG,
-    "production": AZURE_CV_PRODUCTION_CONFIG
+    "production": AZURE_CV_PRODUCTION_CONFIG,
 }
 
 
 def get_error_handling_config(environment: str) -> dict:
     """
     Get error handling configuration for environment.
-    
+
     Args:
         environment: Environment name (development, staging, production)
-        
+
     Returns:
         Error handling configuration dictionary
     """
-    return ERROR_HANDLING_CONFIGS.get(
-        environment.lower(), 
-        AZURE_CV_DEVELOPMENT_CONFIG
-    )
+    return ERROR_HANDLING_CONFIGS.get(environment.lower(), AZURE_CV_DEVELOPMENT_CONFIG)

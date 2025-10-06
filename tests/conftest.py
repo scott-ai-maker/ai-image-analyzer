@@ -19,14 +19,14 @@ def mock_settings() -> Settings:
     return Settings(
         environment="testing",
         debug=True,
-        azure={"computer_vision_endpoint": "https://test.cognitiveservices.azure.com/"},
-        api={
-            "host": "127.0.0.1",
-            "port": 8000,
-            "api_keys": ["test-key-123"],
-            "max_image_size_mb": 5,
-            "log_level": "DEBUG"
-        }
+        azure_computer_vision_endpoint="https://test.cognitiveservices.azure.com/",
+        azure_computer_vision_key="test-key-123",
+        host="127.0.0.1",
+        port=8000,
+        api_keys=["test-key-123"],
+        max_image_size_mb=5,
+        log_level="DEBUG",
+        secret_key="test-secret-key-for-testing-only"
     )
 
 

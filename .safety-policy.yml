@@ -1,0 +1,39 @@
+# Safety configuration for vulnerability scanning
+# https://github.com/pyupio/safety
+security:
+  # Vulnerabilities to ignore (by vulnerability ID)
+  # Format: vulnerability-id:reason
+  ignore:
+      # Example: 39462:This is a false positive for our use case
+      
+  # Continue on errors
+  continue-on-error: false
+
+  # Output format: text, json, bare
+  output: text
+
+  # Short report (only show vulnerable packages)
+  short-report: false
+
+  # Full report (show all packages)
+  full-report: true
+
+  # Include development dependencies
+  dev: true
+
+  # Disable telemetry
+  disable-optional-telemetry: true
+
+  # Cache directory
+  cache-dir: .safety-cache
+
+  # Audit and monitor options
+  audit-and-monitor:
+      # Enable audit and monitor functionality
+      enabled: false
+      
+      # Project name for safety platform
+      # project: "ai-image-analyzer"
+      
+      # Branch name for safety platform  
+      # branch: "main"

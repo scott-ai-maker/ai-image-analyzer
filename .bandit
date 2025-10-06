@@ -1,0 +1,68 @@
+# Bandit security scanner configuration
+# https://bandit.readthedocs.io/en/latest/config.html
+
+[bandit]
+# Directories to exclude from scanning
+exclude_dirs = [
+    "tests",
+    "venv",
+    ".venv",
+    "build", 
+    "dist",
+    "__pycache__",
+    ".git",
+    "node_modules"
+]
+
+# Test IDs to skip (comma-separated)
+skips = [
+    # B101: Test for use of assert
+    # "B101",
+    
+    # B601: Test for shell injection within Paramiko
+    # "B601",
+]
+
+# Confidence levels: LOW, MEDIUM, HIGH
+confidence = "MEDIUM"
+
+# Severity levels: LOW, MEDIUM, HIGH  
+severity = "MEDIUM"
+
+# Test IDs to include (if specified, only these tests will be run)
+# tests = ["B201", "B301"]
+
+# Output format: csv, custom, html, json, screen, txt, xml, yaml
+format = "screen"
+
+# Show only issues with this confidence level or higher
+# assert_used = {
+#     "confidence": "HIGH",
+#     "severity": "MEDIUM"
+# }
+
+# Custom test configurations
+[bandit.assert_used]
+skips = ["*_test.py", "test_*.py"]
+
+[bandit.hardcoded_password_string]
+# Ignore test files for password hardcoding checks
+word_list = ["password", "pass", "passwd", "pwd", "secret", "token", "key"]
+
+[bandit.shell_injection]
+# Commands that are considered safe
+subprocess = [
+    "check_output",
+    "run", 
+    "call",
+    "Popen"
+]
+shell = ["False"]
+
+[bandit.sql_injection]
+# SQL injection detection settings
+qualnames = [
+    "MySQLdb.connect",
+    "psycopg2.connect", 
+    "sqlite3.connect"
+]
