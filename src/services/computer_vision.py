@@ -24,6 +24,18 @@ from ..models.schemas import (
     AnalysisError
 )
 from ..core.config import Settings
+from ..core.error_handling import (
+    CircuitBreaker,
+    CircuitBreakerConfig,
+    RateLimiter,
+    RateLimitConfig,
+    RetryConfig,
+    retry_with_backoff,
+    with_retry,
+    ErrorSeverity,
+    classify_error_severity
+)
+from ..core.error_config import get_error_handling_config
 
 
 logger = logging.getLogger(__name__)
@@ -43,7 +55,37 @@ class ComputerVisionService:
         self.http_client = httpx.AsyncClient(
             timeout=httpx.Timeout(settings.request_timeout)
         )
+        
+        # Initialize error handling components
+        self._setup_error_handling()
         self._initialize_client()
+    
+    def _setup_error_handling(self) -> None:
+        """Initialize circuit breaker and rate limiter based on environment."""
+        # Get environment-specific configuration
+        error_config = get_error_handling_config(self.settings.environment)
+        
+        # Initialize circuit breaker
+        self.circuit_breaker = CircuitBreaker(
+            "azure_computer_vision", 
+            error_config["circuit_breaker"]
+        )
+        
+        # Initialize rate limiter
+        self.rate_limiter = RateLimiter(
+            "azure_computer_vision", 
+            error_config["rate_limiter"]
+        )
+        
+        # Set retry configuration
+        self.retry_config = error_config["retry"]
+        
+        logger.info(
+            f"Error handling initialized for {self.settings.environment} environment: "
+            f"max_retries={self.retry_config.max_attempts}, "
+            f"rate_limit={error_config['rate_limiter'].max_requests}/min, "
+            f"circuit_threshold={error_config['circuit_breaker'].failure_threshold}"
+        )
 
     def _initialize_client(self) -> None:
         """Initialize the Azure Computer Vision client with proper authentication."""
@@ -75,7 +117,7 @@ class ComputerVisionService:
         confidence_threshold: float = 0.5,
         max_objects: int = 50
     ) -> Tuple[List[DetectedObject], Optional[ImageMetadata], float]:
-        """Analyze image from URL for object detection.
+        """Analyze image from URL for object detection with comprehensive error handling.
         
         Args:
             image_url: Public URL to the image
@@ -87,34 +129,52 @@ class ComputerVisionService:
             
         Raises:
             ComputerVisionServiceError: On service errors
+            CircuitBreakerError: If circuit breaker is open
+            RateLimitExceededError: If rate limit exceeded
         """
         start_time = time.time()
         
         try:
+            # Apply rate limiting
+            await self.rate_limiter.acquire()
+            
             # Validate image URL accessibility
             await self._validate_image_url(image_url)
             
-            # Perform object detection
+            # Perform object detection with circuit breaker and retry
             logger.info(f"Analyzing image from URL: {image_url}")
             
-            # Run synchronous Azure SDK call in thread pool
-            loop = asyncio.get_event_loop()
-            result = await loop.run_in_executor(
-                None,
-                lambda: self.client.detect_objects(image_url)
+            async def _detect_objects():
+                """Inner function for Azure API call."""
+                if not self.client:
+                    raise ComputerVisionServiceError("Azure client not initialized", "CLIENT_ERROR")
+                
+                loop = asyncio.get_event_loop()
+                return await loop.run_in_executor(
+                    None,
+                    lambda: self.client.detect_objects(image_url)
+                )
+            
+            # Execute with circuit breaker protection and retry logic
+            result = await self.circuit_breaker.call(
+                lambda: retry_with_backoff(
+                    _detect_objects,
+                    self.retry_config,
+                    f"analyze_image_url({image_url})"
+                )
             )
             
             processing_time = (time.time() - start_time) * 1000
             
             # Convert Azure results to our models
             detected_objects = self._convert_azure_objects(
-                result.objects, 
+                getattr(result, 'objects', []), 
                 confidence_threshold, 
                 max_objects
             )
             
-            # Get image metadata
-            image_metadata = await self._get_image_metadata(image_url)
+            # Get image metadata with error handling
+            image_metadata = await self._get_image_metadata_safely(image_url)
             
             logger.info(
                 f"Analysis completed: {len(detected_objects)} objects detected "
@@ -124,9 +184,13 @@ class ComputerVisionService:
             return detected_objects, image_metadata, processing_time
             
         except HttpResponseError as e:
-            error_msg = f"Azure Computer Vision error: {e.message}"
+            # Handle Azure API errors
+            error_msg = f"Azure Computer Vision error: {getattr(e, 'message', str(e))}"
             logger.error(error_msg)
             raise ComputerVisionServiceError(error_msg, "AZURE_CV_ERROR") from e
+        except ComputerVisionServiceError:
+            # Re-raise our service errors as-is
+            raise
             
         except Exception as e:
             error_msg = f"Unexpected error during image analysis: {str(e)}"
@@ -321,6 +385,26 @@ class ComputerVisionService:
             logger.warning(f"Could not get image metadata: {e}")
             return None
 
+    async def _get_image_metadata_safely(self, image_url: str) -> Optional[ImageMetadata]:
+        """Get image metadata with comprehensive error handling.
+        
+        Args:
+            image_url: Image URL
+            
+        Returns:
+            ImageMetadata instance or None if unavailable
+        """
+        try:
+            return await retry_with_backoff(
+                self._get_image_metadata,
+                RetryConfig(max_attempts=2, base_delay=0.5),  # Lightweight retry
+                f"get_metadata({image_url})",
+                image_url
+            )
+        except Exception as e:
+            logger.warning(f"Failed to get image metadata safely: {e}")
+            return None
+
     def _get_image_metadata_from_bytes(self, image_data: bytes) -> Optional[ImageMetadata]:
         """Extract image metadata from binary data.
         
@@ -343,7 +427,7 @@ class ComputerVisionService:
                 return ImageMetadata(
                     width=img.width,
                     height=img.height,
-                    format=format_map.get(img.format, ImageFormat.JPEG),
+                    format=format_map.get(img.format or 'JPEG', ImageFormat.JPEG),
                     size_bytes=len(image_data),
                     color_space=img.mode
                 )
