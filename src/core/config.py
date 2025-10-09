@@ -117,6 +117,68 @@ class Settings(BaseSettings):
         default=30, ge=5, le=300, description="Request timeout for Azure API calls"
     )
 
+    # Database Configuration
+    database_host: str = Field(
+        default="localhost", description="Database host address"
+    )
+    database_port: int = Field(
+        default=5432, ge=1024, le=65535, description="Database port"
+    )
+    database_user: str = Field(
+        default="ai_analyzer", description="Database username"
+    )
+    database_password: str = Field(
+        default="dev_password", description="Database password"
+    )
+    database_name: str = Field(
+        default="ai_image_analyzer", description="Database name"
+    )
+    
+    # Database connection pool settings
+    database_pool_size: int = Field(
+        default=20, ge=5, le=100, description="Database connection pool size"
+    )
+    database_max_overflow: int = Field(
+        default=30, ge=0, le=100, description="Max database pool overflow"
+    )
+    database_pool_timeout: int = Field(
+        default=30, ge=5, le=300, description="Database pool timeout in seconds"
+    )
+    database_pool_recycle: int = Field(
+        default=3600, ge=300, le=7200, description="Database connection recycle time in seconds"
+    )
+    
+    # Development options
+    use_postgresql: bool = Field(
+        default=True, description="Use PostgreSQL (False for SQLite in development)"
+    )
+
+    # Redis Configuration
+    redis_host: str = Field(
+        default="localhost", description="Redis host address"
+    )
+    redis_port: int = Field(
+        default=6379, ge=1024, le=65535, description="Redis port"
+    )
+    redis_password: Optional[str] = Field(
+        default=None, description="Redis password (if authentication enabled)"
+    )
+    redis_db: int = Field(
+        default=0, ge=0, le=15, description="Redis database number"
+    )
+    redis_max_connections: int = Field(
+        default=10, ge=5, le=100, description="Redis connection pool size"
+    )
+    redis_socket_timeout: int = Field(
+        default=5, ge=1, le=30, description="Redis socket timeout in seconds"
+    )
+    redis_connect_timeout: int = Field(
+        default=5, ge=1, le=30, description="Redis connection timeout in seconds"
+    )
+    redis_enabled: bool = Field(
+        default=True, description="Enable Redis caching (False to disable)"
+    )
+
     # Server Configuration
     host: str = Field(default="0.0.0.0", description="Server host address")
     port: int = Field(default=8000, ge=1024, le=65535, description="Server port")

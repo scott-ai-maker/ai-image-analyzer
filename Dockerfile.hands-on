@@ -1,0 +1,113 @@
+# 🎯 YOUR TASK: Complete this Production Dockerfile
+# This Dockerfile will containerize your FastAPI rate limiting app
+# YOU need to fill in the TODO sections to make it production-ready
+
+# =============================================================================
+# STAGE 1: BUILD ENVIRONMENT
+# =============================================================================
+FROM python:3.11-slim as builder
+
+# TODO 1: Set production environment variables
+# Hint: PYTHONDONTWRITEBYTECODE, PYTHONUNBUFFERED, PIP_NO_CACHE_DIR
+# These optimize Python for containers
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+# TODO 2: Install system build dependencies
+# Hint: build-essential, curl for building packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# TODO 3: Create non-root user for security
+# Hint: groupadd and useradd commands
+# This follows the principle of least privilege
+
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements files for dependency installation
+COPY requirements.txt .
+
+# TODO 4: Install Python dependencies efficiently  
+# Hint: pip install with --no-cache-dir and --upgrade pip
+# This creates an optimized Python environment
+
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application source code
+COPY . .
+
+# TODO 5: Set proper file ownership and permissions
+# Hint: chown -R appuser:appuser and chmod commands
+# This ensures security and proper access
+
+RUN chown -R appuser:appuser /app
+RUN chmod -R 755 /app
+
+# =============================================================================
+# STAGE 2: RUNTIME ENVIRONMENT (Production)
+# =============================================================================
+FROM python:3.11-slim as runtime
+
+# TODO 6: Set runtime environment variables
+# Hint: Include PYTHONPATH=/app for module imports
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
+
+# YOUR CODE HERE: Add PYTHONPATH and other runtime vars
+
+
+# TODO 7: Install only runtime dependencies (minimal image)
+# Hint: Only curl is needed for health checks
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# TODO 8: Create same non-root user as build stage
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set working directory
+WORKDIR /app
+
+# TODO 9: Copy from builder stage efficiently
+# Hint: Copy Python packages and app code separately
+# Only copy what's needed for runtime
+
+COPY --from=builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=builder /usr/local/bin/ /usr/local/bin/
+COPY --from=builder --chown=appuser:appuser /app /app
+
+# TODO 10: Switch to non-root user before running app
+USER appuser
+
+# TODO 11: Expose the port your FastAPI app uses
+# Hint: Your rate limiting app runs on port 8003
+EXPOSE 8003
+
+# TODO 12: Add health check for Kubernetes probes
+# Hint: curl the /health endpoint with proper timeout
+# This enables Kubernetes to know if your app is healthy
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl --fail --silent http://localhost:8003/health || exit 1
+
+# TODO 13: Set the default command to run your app
+# Hint: Use uvicorn with production settings
+# Include: host, port, workers for scalability
+
+CMD ["uvicorn", "simple_rate_limiting:app", "--host", "0.0.0.0", "--port", "8003", "--workers", "2"]
+# =============================================================================
+# LABELS FOR METADATA (Best Practice)
+# =============================================================================
+LABEL maintainer="Your Name <your.email@company.com>"
+LABEL version="1.0.0"
+LABEL description="FastAPI Rate Limiting Application"

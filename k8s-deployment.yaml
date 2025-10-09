@@ -1,0 +1,111 @@
+# TODO: Complete the Kubernetes deployment manifest
+# This will deploy your containerized rate limiting app to Kubernetes
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rate-limiter-deployment
+  labels:
+    app: rate-limiter
+    version: v1
+spec:
+  # TODO: Set replica count (start with 2 for high availability)
+  replicas: 2 
+  
+  # TODO: Define selector to match pods
+  selector:
+    matchLabels:
+      app: rate-limiter 
+      
+  # TODO: Configure deployment strategy for zero-downtime updates
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: rate-limiter
+        version: v1
+    spec:
+      # TODO: Configure security context (non-root user)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001 
+        fsGroup: 2001
+        
+      containers:
+      - name: rate-limiter
+        # TODO: Use your Docker image
+        image: ai-rate-limiter:latest
+        
+        # TODO: Set resource limits and requests
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+            
+        # TODO: Configure container port
+        ports:
+        - containerPort: 8003
+          name: http
+          
+        # Health checks configured correctly
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8003
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          
+        # TODO: Configure environment variables
+        env:
+        - name: PORT
+          value: "8003"
+        - name: HOST
+          value: "0.0.0.0"
+
+---
+# TODO: Create Service to expose the deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: rate-limiter-service
+  labels:
+    app: rate-limiter
+spec:
+  # TODO: Configure service type and selector
+  type: LoadBalancer 
+  selector:
+    app: rate-limiter 
+    
+  # TODO: Configure port mapping  
+  ports:
+  - port: 8080 
+    targetPort: 8003 
+    protocol: TCP
+    name: http
+
+---
+# TODO: Create ConfigMap for application configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rate-limiter-config
+data:
+  # TODO: Add configuration values
+  RATE_LIMIT_REQUESTS: "10"
+  RATE_LIMIT_WINDOW: "60s"
+  LOG_LEVEL: "info"
