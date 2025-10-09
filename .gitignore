@@ -70,6 +70,19 @@ Desktop.ini
 *.log
 logs/
 
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+.pnp.*
+
+# Frontend build artifacts
+frontend/build/
+frontend/dist/
+
 # Application specific
 uploads/
 temp/
