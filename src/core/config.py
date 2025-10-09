@@ -1,8 +1,9 @@
 """Configuration management using Pydantic Settings."""
 
-from typing import List, Optional
-from pydantic_settings import BaseSettings
+from typing import Optional
+
 from pydantic import Field, validator
+from pydantic_settings import BaseSettings
 
 
 class AzureConfig(BaseSettings):
@@ -43,7 +44,7 @@ class ApiConfig(BaseSettings):
 
     # Security
     api_key_header: str = Field(default="X-API-Key", description="API key header name")
-    api_keys: List[str] = Field(default_factory=list, description="Valid API keys")
+    api_keys: list[str] = Field(default_factory=list, description="Valid API keys")
 
     # Performance
     max_image_size_mb: int = Field(
@@ -118,22 +119,16 @@ class Settings(BaseSettings):
     )
 
     # Database Configuration
-    database_host: str = Field(
-        default="localhost", description="Database host address"
-    )
+    database_host: str = Field(default="localhost", description="Database host address")
     database_port: int = Field(
         default=5432, ge=1024, le=65535, description="Database port"
     )
-    database_user: str = Field(
-        default="ai_analyzer", description="Database username"
-    )
+    database_user: str = Field(default="ai_analyzer", description="Database username")
     database_password: str = Field(
         default="dev_password", description="Database password"
     )
-    database_name: str = Field(
-        default="ai_image_analyzer", description="Database name"
-    )
-    
+    database_name: str = Field(default="ai_image_analyzer", description="Database name")
+
     # Database connection pool settings
     database_pool_size: int = Field(
         default=20, ge=5, le=100, description="Database connection pool size"
@@ -145,27 +140,24 @@ class Settings(BaseSettings):
         default=30, ge=5, le=300, description="Database pool timeout in seconds"
     )
     database_pool_recycle: int = Field(
-        default=3600, ge=300, le=7200, description="Database connection recycle time in seconds"
+        default=3600,
+        ge=300,
+        le=7200,
+        description="Database connection recycle time in seconds",
     )
-    
+
     # Development options
     use_postgresql: bool = Field(
         default=True, description="Use PostgreSQL (False for SQLite in development)"
     )
 
     # Redis Configuration
-    redis_host: str = Field(
-        default="localhost", description="Redis host address"
-    )
-    redis_port: int = Field(
-        default=6379, ge=1024, le=65535, description="Redis port"
-    )
+    redis_host: str = Field(default="localhost", description="Redis host address")
+    redis_port: int = Field(default=6379, ge=1024, le=65535, description="Redis port")
     redis_password: Optional[str] = Field(
         default=None, description="Redis password (if authentication enabled)"
     )
-    redis_db: int = Field(
-        default=0, ge=0, le=15, description="Redis database number"
-    )
+    redis_db: int = Field(default=0, ge=0, le=15, description="Redis database number")
     redis_max_connections: int = Field(
         default=10, ge=5, le=100, description="Redis connection pool size"
     )
@@ -188,7 +180,7 @@ class Settings(BaseSettings):
     log_level: str = Field(default="INFO", description="Logging level")
 
     # CORS Configuration
-    cors_origins: List[str] = Field(
+    cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"],
         description="Allowed origins for CORS",
     )
@@ -199,7 +191,7 @@ class Settings(BaseSettings):
         description="Secret key for JWT tokens",
     )
     api_key_header: str = Field(default="X-API-Key", description="API key header name")
-    api_keys: List[str] = Field(default_factory=list, description="Valid API keys")
+    api_keys: list[str] = Field(default_factory=list, description="Valid API keys")
     max_request_size: int = Field(
         default=10485760,
         ge=1048576,
@@ -310,17 +302,14 @@ class Settings(BaseSettings):
     def validate_secret_key(cls, v, values):
         """Validate secret key security in production."""
         environment = values.get("environment", "development")
-        
-        if (
-            environment == "production"
-            and v == "dev-secret-key-change-in-production"
-        ):
+
+        if environment == "production" and v == "dev-secret-key-change-in-production":
             raise ValueError("Secret key must be changed for production deployment")
-        
+
         # Relaxed requirements for testing environment
         if environment == "testing":
             return v
-            
+
         if len(v) < 32:
             raise ValueError("Secret key must be at least 32 characters long")
         return v

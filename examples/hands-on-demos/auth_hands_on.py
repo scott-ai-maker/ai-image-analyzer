@@ -10,13 +10,11 @@ I'll guide, YOU code!
 """
 
 import asyncio
-import json
-import jwt
-import hashlib
-import secrets
 from datetime import datetime, timedelta
-from typing import Optional, Dict, Any, List
 from enum import Enum
+from typing import Any, Optional
+
+import jwt
 
 # Required packages: PyJWT cryptography
 
@@ -49,7 +47,7 @@ class JWTManager:
         self.algorithm = "HS256"
 
     def create_access_token(
-        self, user_id: str, role: UserRole, permissions: List[str]
+        self, user_id: str, role: UserRole, permissions: list[str]
     ) -> str:
         """
         YOUR TASK: Create JWT access token
@@ -91,7 +89,7 @@ class JWTManager:
         )
         return token
 
-    def verify_access_token(self, token: str) -> Optional[Dict[str, Any]]:
+    def verify_access_token(self, token: str) -> Optional[dict[str, Any]]:
         """
         YOUR TASK: Verify and decode access token
 
@@ -100,14 +98,14 @@ class JWTManager:
         2. Check token_type is ACCESS
         3. Return payload if valid, None if invalid
         """
-        print(f"🔍 Verifying access token...")
+        print("🔍 Verifying access token...")
 
         try:
             payload = jwt.decode(token, self.access_secret, algorithms=[self.algorithm])
             if payload.get("token_type") != TokenType.ACCESS.value:
                 raise ValueError("Invalid token type")
 
-            print(f"   ✅ Access token verified successfully")
+            print("   ✅ Access token verified successfully")
             return payload
 
         except Exception as e:
@@ -118,7 +116,7 @@ class JWTManager:
         """
         YOUR TASK: Verify refresh token and return user_id
         """
-        print(f"🔄 Verifying refresh token...")
+        print("🔄 Verifying refresh token...")
 
         try:
             payload = jwt.decode(
@@ -137,7 +135,7 @@ class JWTManager:
             print(f"   ❌ Refresh token verification failed: {e}")
             return None
 
-    def refresh_tokens(self, refresh_token: str) -> Optional[Dict[str, str]]:
+    def refresh_tokens(self, refresh_token: str) -> Optional[dict[str, str]]:
         """
         YOUR TASK: Exchange refresh token for new tokens
 
@@ -147,7 +145,7 @@ class JWTManager:
         3. Create new access + refresh tokens
         4. Return both
         """
-        print(f"🔄 Refreshing tokens...")
+        print("🔄 Refreshing tokens...")
 
         # Step 1: Verify refresh token
         user_id = self.verify_refresh_token(refresh_token)
@@ -166,7 +164,7 @@ class JWTManager:
         )
         new_refresh_token = self.create_refresh_token(user_id)
 
-        print(f"   ✅ Tokens refreshed successfully")
+        print("   ✅ Tokens refreshed successfully")
 
         return {"access_token": new_access_token, "refresh_token": new_refresh_token}
 
@@ -183,7 +181,7 @@ class UserStore:
             }
         }
 
-    def get_user(self, user_id: str) -> Optional[Dict[str, Any]]:
+    def get_user(self, user_id: str) -> Optional[dict[str, Any]]:
         return self.users.get(user_id)
 
 
@@ -292,9 +290,9 @@ class RBACManager:
         has_perm = required_permission in user_permissions
 
         if has_perm:
-            print(f"   ✅ Access granted")
+            print("   ✅ Access granted")
         else:
-            print(f"   ❌ Access denied")
+            print("   ❌ Access denied")
 
         return has_perm
 

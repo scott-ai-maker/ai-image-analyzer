@@ -34,7 +34,7 @@ WORKDIR /app
 # Copy requirements files for dependency installation
 COPY requirements.txt .
 
-# TODO 4: Install Python dependencies efficiently  
+# TODO 4: Install Python dependencies efficiently
 # Hint: pip install with --no-cache-dir and --upgrade pip
 # This creates an optimized Python environment
 

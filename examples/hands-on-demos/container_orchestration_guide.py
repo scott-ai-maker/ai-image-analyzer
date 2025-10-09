@@ -17,7 +17,8 @@ This shows how Google, Netflix, and Uber deploy applications!
 # This file serves as a guide - we'll create the actual Docker and Kubernetes files step by step
 # Let's start with understanding the deployment pipeline:
 
-print("""
+print(
+    """
 🚀 Container Orchestration & Deployment Learning Path
 =====================================================
 
@@ -52,7 +53,8 @@ Step 16: Disaster recovery patterns
 🎯 This is the FINAL skill to complete your production toolkit!
 
 Let's start with Docker fundamentals...
-""")
+"""
+)
 
 if __name__ == "__main__":
     print("🎯 Ready to learn Container Orchestration & Deployment!")
