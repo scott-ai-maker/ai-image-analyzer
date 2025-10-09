@@ -21,14 +21,15 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            backdrop-filter: blur(10px);
         }
 
         .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 30px;
             text-align: center;
@@ -52,9 +53,10 @@
         .demo-section {
             margin-bottom: 40px;
             padding: 30px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
         }
 
         .demo-section h2 {
@@ -72,24 +74,25 @@
         }
 
         .button {
-            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             padding: 12px 24px;
-            border-radius: 6px;
+            border-radius: 20px;
             cursor: pointer;
             font-size: 1rem;
             margin: 5px;
             transition: all 0.3s ease;
+            font-weight: 600;
         }
 
         .button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
 
         .button.success {
-            background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
         }
 
         .button.danger {
@@ -127,7 +130,7 @@
         .metric-value {
             font-size: 2rem;
             font-weight: bold;
-            color: #3498db;
+            color: #667eea;
             margin-bottom: 5px;
         }
 
@@ -153,14 +156,149 @@
         }
 
         .enterprise-badge {
-            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 5px 15px;
+            padding: 8px 20px;
             border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
+            font-size: 0.85rem;
+            font-weight: 600;
             display: inline-block;
             margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Image Upload Styles */
+        .image-upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            margin: 20px 0;
+        }
+
+                .image-upload-area:hover,
+        .image-upload-area.drag-over {
+            border-color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-content {
+            pointer-events: none;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+
+        .upload-subtext {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .image-preview {
+            margin: 20px 0;
+            text-align: center;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .image-info {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .analysis-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .button:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .analysis-result {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .analysis-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3498db;
+        }
+
+        .analysis-section h4 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .analysis-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #e74c3c 0%, #f39c12 50%, #27ae60 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -181,10 +319,51 @@
                 <div id="health-result" class="result" style="display: none;"></div>
             </div>
 
+            <!-- Image Analysis Section -->
+            <div class="demo-section">
+                <h2>🖼️ AI Image Analysis</h2>
+                <p>Upload images for AI-powered analysis with object detection, text recognition, and more</p>
+
+                <!-- Image Upload Area -->
+                <div id="image-upload-area" class="image-upload-area"
+                     ondrop="handleDrop(event)"
+                     ondragover="handleDragOver(event)"
+                     ondragenter="handleDragEnter(event)"
+                     ondragleave="handleDragLeave(event)"
+                     onclick="document.getElementById('file-input').click()">
+                    <div class="upload-content">
+                        <div class="upload-icon">📸</div>
+                        <p class="upload-text">Drag & drop an image here or click to select</p>
+                        <p class="upload-subtext">Supports JPG, PNG, GIF (max 10MB)</p>
+                    </div>
+                    <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+
+                <!-- Image Preview -->
+                <div id="image-preview" class="image-preview" style="display: none;">
+                    <img id="preview-image" src="" alt="Preview">
+                    <div class="image-info">
+                        <span id="image-name"></span>
+                        <span id="image-size"></span>
+                    </div>
+                </div>
+
+                <!-- Analysis Controls -->
+                <div class="analysis-controls">
+                    <button class="button" id="analyze-button" onclick="analyzeImage()" disabled>
+                        <span id="analyze-text">🔍 Analyze Image</span>
+                    </button>
+                    <button class="button" onclick="clearImage()">Clear Image</button>
+                </div>
+
+                <!-- Analysis Results -->
+                <div id="analysis-result" class="result" style="display: none;"></div>
+            </div>
+
             <!-- Rate Limiting Section -->
             <div class="demo-section">
                 <h2>API Rate Limiting</h2>
-                <p>Enterprise-grade request throttling (10 requests/minute)</p>
+                <p>Enterprise-grade request throttling (100 requests/minute)</p>
                 <button class="button" onclick="testSingleRequest()">Single Request</button>
                 <button class="button danger" onclick="testRateLimiting()">Test Rate Limiting (12 requests)</button>
                 <button class="button success" onclick="checkRateStatus()">Check Rate Status</button>
@@ -246,9 +425,19 @@
         let successCount = 0;
 
         // Dynamic API base URL - works for both local development and Azure deployment
-        const API_BASE = window.location.hostname === 'localhost'
-            ? 'http://localhost:8000'
-            : window.BACKEND_URL || `${window.location.protocol}//${window.location.hostname.replace('web-', 'api-')}`;
+        let API_BASE;
+        if (window.location.hostname === 'localhost') {
+            API_BASE = 'http://localhost:8000';
+        } else if (window.location.hostname.includes('web-image-analyzer')) {
+            // Azure Container Apps - replace web- with api-
+            API_BASE = `${window.location.protocol}//api-image-analyzer.nicesea-5e74ee97.eastus2.azurecontainerapps.io`;
+        } else {
+            // Fallback - try to replace web- with api-
+            API_BASE = `${window.location.protocol}//${window.location.hostname.replace('web-', 'api-')}`;
+        }
+
+        console.log('Frontend running on:', window.location.hostname);
+        console.log('API_BASE configured as:', API_BASE);
 
         // Update metrics display
         function updateMetrics() {
@@ -447,6 +636,223 @@ This is the proper HTTP 429 response that prevents API abuse.`;
                 document.getElementById('system-status').className = 'status-indicator unhealthy';
             }
         }, 30000);
+
+        // Image upload functionality
+        let selectedFile = null;
+
+        // Drag and drop handlers
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDragEnter(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.target.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.target.classList.remove('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.target.classList.remove('drag-over');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        // File input handler
+        function handleFileSelect(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        // Process selected file
+        function handleFile(file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file (JPG, PNG, GIF)');
+                return;
+            }
+
+            // Validate file size (10MB limit)
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (file.size > maxSize) {
+                alert('File is too large. Please select an image smaller than 10MB.');
+                return;
+            }
+
+            selectedFile = file;
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('image-preview');
+                const previewImage = document.getElementById('preview-image');
+                const imageName = document.getElementById('image-name');
+                const imageSize = document.getElementById('image-size');
+
+                previewImage.src = e.target.result;
+                imageName.textContent = file.name;
+                imageSize.textContent = formatFileSize(file.size);
+
+                preview.style.display = 'block';
+                document.getElementById('analyze-button').disabled = false;
+
+                // Hide upload area
+                document.getElementById('image-upload-area').style.display = 'none';
+            };
+
+            reader.readAsDataURL(file);
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Clear image selection
+        function clearImage() {
+            selectedFile = null;
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('image-upload-area').style.display = 'block';
+            document.getElementById('analyze-button').disabled = true;
+            document.getElementById('analysis-result').style.display = 'none';
+            document.getElementById('file-input').value = '';
+        }
+
+        // Analyze image
+        async function analyzeImage() {
+            if (!selectedFile) {
+                alert('Please select an image first');
+                return;
+            }
+
+            const analyzeButton = document.getElementById('analyze-button');
+            const analyzeText = document.getElementById('analyze-text');
+            const resultDiv = document.getElementById('analysis-result');
+
+            // Show loading state
+            analyzeButton.disabled = true;
+            analyzeText.innerHTML = '🔄 Analyzing...';
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '🔄 <strong>UPLOADING AND ANALYZING IMAGE</strong>\\n\\nPlease wait while we process your image...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const startTime = Date.now();
+                const response = await fetch(`${API_BASE}/api/analyze-image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const endTime = Date.now();
+
+                requestCount++;
+
+                if (response.ok) {
+                    successCount++;
+                    const data = await response.json();
+                    displayAnalysisResults(data, endTime - startTime);
+                } else if (response.status === 429) {
+                    const errorData = await response.json();
+                    resultDiv.innerHTML = `⛔ <strong>RATE LIMIT EXCEEDED</strong>\\n\\n${errorData.message}\\n\\nPlease wait before uploading another image.`;
+                } else {
+                    const errorData = await response.json();
+                    resultDiv.innerHTML = `❌ <strong>ANALYSIS FAILED</strong>\\n\\nError: ${errorData.error || 'Unknown error occurred'}\\n\\nPlease try again with a different image.`;
+                }
+            } catch (error) {
+                requestCount++;
+                resultDiv.innerHTML = `❌ <strong>CONNECTION FAILED</strong>\\n\\nError: ${error.message}\\n\\nPlease check your connection and try again.`;
+            } finally {
+                // Reset button state
+                analyzeButton.disabled = false;
+                analyzeText.innerHTML = '🔍 Analyze Image';
+                updateMetrics();
+            }
+        }
+
+        // Display analysis results
+        function displayAnalysisResults(data, processingTime) {
+            const resultDiv = document.getElementById('analysis-result');
+            const analysis = data.analysis;
+
+            let objectsHtml = '';
+            if (analysis.objects_detected && analysis.objects_detected.length > 0) {
+                objectsHtml = analysis.objects_detected.map((obj, index) => {
+                    const confidence = analysis.confidence_scores[index] || 0;
+                    return `
+                        <div class="analysis-item">
+                            <strong>${obj}</strong>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" style="width: ${confidence * 100}%"></div>
+                            </div>
+                            <small>${Math.round(confidence * 100)}% confidence</small>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            let colorsHtml = '';
+            if (analysis.colors && analysis.colors.length > 0) {
+                colorsHtml = analysis.colors.map(color => `<span style="background: ${color}; padding: 4px 8px; border-radius: 4px; color: white; margin: 2px;">${color}</span>`).join(' ');
+            }
+
+            resultDiv.innerHTML = `
+                <div class="analysis-section">
+                    <h4>📊 Analysis Summary</h4>
+                    <p><strong>File:</strong> ${data.filename}</p>
+                    <p><strong>Size:</strong> ${formatFileSize(data.file_size)}</p>
+                    <p><strong>Processing Time:</strong> ${processingTime}ms</p>
+                    <p><strong>Description:</strong> ${analysis.description}</p>
+                </div>
+
+                ${analysis.objects_detected && analysis.objects_detected.length > 0 ? `
+                <div class="analysis-section">
+                    <h4>🎯 Objects Detected</h4>
+                    <div class="analysis-grid">
+                        ${objectsHtml}
+                    </div>
+                </div>
+                ` : ''}
+
+                ${analysis.colors && analysis.colors.length > 0 ? `
+                <div class="analysis-section">
+                    <h4>🎨 Dominant Colors</h4>
+                    <p>${colorsHtml}</p>
+                </div>
+                ` : ''}
+
+                <div class="analysis-section">
+                    <h4>🔍 Content Analysis</h4>
+                    <p><strong>Faces Detected:</strong> ${analysis.faces_detected || 0}</p>
+                    <p><strong>Text Detected:</strong> ${analysis.text_detected && analysis.text_detected.length > 0 ? analysis.text_detected.join(', ') : 'None'}</p>
+                    <p><strong>Content Rating:</strong> ${analysis.adult_content ? '🔞 Adult Content' : '✅ Safe'}</p>
+                </div>
+
+                <div class="analysis-section">
+                    <h4>⚙️ Technical Details</h4>
+                    <p><strong>Model Version:</strong> ${data.metadata.model_version}</p>
+                    <p><strong>Analyzed At:</strong> ${new Date(data.metadata.analyzed_at).toLocaleString()}</p>
+                    <p><strong>Environment:</strong> ${data.metadata.environment}</p>
+                </div>
+            `;
+        }
 
         // Initialize with health check
         setTimeout(checkHealth, 1000);

@@ -15,6 +15,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from .image_analyzer import ImageAnalyzer
+
 # Azure Application Insights (only import if connection string is available)
 try:
     if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
@@ -83,6 +85,9 @@ class SimpleRateLimiter:
 # Global rate limiter
 rate_limiter = SimpleRateLimiter()
 
+# Global image analyzer
+image_analyzer = ImageAnalyzer()
+
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Simple rate limiting middleware."""
@@ -143,6 +148,9 @@ allowed_origins = [
     "http://localhost:5173",
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    # Production URLs
+    "https://web-image-analyzer.nicesea-5e74ee97.eastus2.azurecontainerapps.io",
+    "https://api-image-analyzer.nicesea-5e74ee97.eastus2.azurecontainerapps.io",
 ]
 
 # Add CORS middleware
@@ -276,27 +284,21 @@ async def analyze_image(file: UploadFile = File(...)):
         content = await file.read()
         file_size = len(content)
 
-        # Mock AI analysis (in production, this would use Azure Computer Vision)
+        # Real AI image analysis using computer vision
+        analysis_data = image_analyzer.analyze_image(
+            content, file.filename or "unknown"
+        )
         processing_time = int((time.time() - start_time) * 1000)
 
         analysis_result = {
             "filename": file.filename,
             "file_size": file_size,
             "content_type": file.content_type,
-            "analysis": {
-                "objects_detected": ["person", "car", "building"],
-                "confidence_scores": [0.95, 0.87, 0.92],
-                "description": "This image contains a person standing next to a car in front of a building",
-                "colors": ["blue", "red", "gray"],
-                "text_detected": [],
-                "faces_detected": 1,
-                "adult_content": False,
-                "racy_content": False,
-            },
+            "analysis": analysis_data,
             "metadata": {
                 "analyzed_at": datetime.utcnow().isoformat(),
                 "processing_time_ms": processing_time,
-                "model_version": "2.0.0",
+                "model_version": "2.1.0",
                 "environment": ENVIRONMENT,
             },
         }
