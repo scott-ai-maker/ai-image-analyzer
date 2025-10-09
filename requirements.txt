@@ -5,3 +5,9 @@ starlette==0.27.0
 pydantic==2.5.0
 python-multipart==0.0.6
 psutil==5.9.6
+
+# Image processing libraries
+Pillow==10.1.0
+numpy==1.25.2
+opencv-python-headless==4.8.1.78
+scikit-image==0.22.0
