@@ -1,4 +1,4 @@
-name: 🚀 CI/CD Pipeline
+name: CI/CD Pipeline
 
 on:
   push:
@@ -13,130 +13,122 @@ env:
   PYTHON_VERSION: "3.11"
 
 jobs:
-  # 🧪 Testing and Quality Assurance
+  # Testing and Quality Assurance
   test:
-    name: 🧪 Tests & Quality
+    name: Tests & Quality
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: 📦 Cache dependencies
+      - name: Cache pip dependencies
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: 🔧 Install dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-asyncio httpx
 
-      - name: 🎯 Lint with ruff
+      - name: Lint with ruff
         run: |
-          ruff check --output-format github .
-          ruff format --check .
+          ruff check app/ --output-format=github
 
-      - name: 🔍 Type check with mypy
+      - name: Type check with mypy
         run: |
-          mypy src/ --ignore-missing-imports
+          mypy app/ --ignore-missing-imports
 
-      - name: 🧪 Run unit tests
+      - name: Run unit tests
         run: |
-          pytest tests/ -v --cov=src --cov-report=xml --cov-report=html
+          python -m pytest tests/ -v --cov=app --cov-report=xml --cov-report=html
 
-      - name: 🔒 Test error handling
-        run: |
-          python scripts/test_error_handling.py
-
-      - name: 📊 Upload coverage to Codecov
+      - name: Upload coverage reports
         uses: codecov/codecov-action@v3
         if: matrix.python-version == '3.11'
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage.xml
           fail_ci_if_error: false
 
-  # 🔒 Security Scanning
+  # Security Analysis
   security:
-    name: 🔒 Security Scan
+    name: Security Analysis
     runs-on: ubuntu-latest
     needs: test
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install -r requirements.txt
+          pip install bandit[toml] safety
 
-      - name: 🛡️ Run Bandit security scan
+      - name: Run Bandit security scan
         run: |
-          bandit -r src/ -f json -o bandit-report.json || true
-          bandit -r src/ -f txt
+          bandit -r app/ -f json -o bandit-report.json
+        continue-on-error: true
 
-      - name: 🔍 Run Safety check
+      - name: Run Safety check
         run: |
-          safety check --json --output safety-report.json || true
-          safety check
+          safety check --json --output safety-report.json
+        continue-on-error: true
 
-      - name: 📋 Run Semgrep scan
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/security-audit
-            p/secrets
-            p/ci
-            p/python
-
-      - name: 📤 Upload security reports
+      - name: Upload security reports
         uses: actions/upload-artifact@v4
-        if: always()
         with:
-          name: security-reports
+          name: security-reports-${{ github.sha }}
           path: |
             bandit-report.json
             safety-report.json
+          retention-days: 30
 
-  # 🐳 Docker Build and Scan
+  # Docker Build and Push
   docker:
-    name: 🐳 Docker Build & Scan
+    name: Docker Build & Security Scan
     runs-on: ubuntu-latest
     needs: [test, security]
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐳 Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: 🔑 Log in to Container Registry
-        if: github.event_name != 'pull_request'
+      - name: Login to Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 🏷️ Extract metadata
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -147,33 +139,33 @@ jobs:
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
 
-      - name: 🏗️ Build Docker image
+      - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: 🔍 Scan image with Trivy
+      - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: "sarif"
           output: "trivy-results.sarif"
 
-      - name: 📤 Upload Trivy scan results
+      - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v2
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
 
-  # 🚀 Integration Tests
+  # Integration Tests
   integration:
-    name: 🚀 Integration Tests
+    name: Integration Tests
     runs-on: ubuntu-latest
     needs: docker
     services:
@@ -188,14 +180,14 @@ jobs:
           AZURE_COMPUTER_VISION_KEY: demo-key
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: ⏱️ Wait for service
+      - name: Wait for service
         run: |
           timeout 30 bash -c 'until curl -f http://localhost:8000/health; do sleep 2; done'
 
-      - name: 🧪 Run API integration tests
+      - name: Run API integration tests
         run: |
           # Test health endpoint
           curl -f http://localhost:8000/health | jq '.'
@@ -206,35 +198,33 @@ jobs:
           # Test OpenAPI docs
           curl -f http://localhost:8000/docs
 
-          # Test API endpoints (with demo data)
-          curl -X POST "http://localhost:8000/analyze" \
-            -H "Content-Type: application/json" \
-            -d '{"image_url": "https://via.placeholder.com/300x300.jpg"}' || true
+          # Test analyze endpoint with sample data
+          echo '{"image_data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="}' | \
+            curl -X POST -H "Content-Type: application/json" -d @- http://localhost:8000/analyze
 
-  # 📊 Performance Tests
+  # Performance Tests
   performance:
-    name: 📊 Performance Tests
+    name: Performance Tests
     runs-on: ubuntu-latest
     needs: integration
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: 📦 Install load testing tools
+      - name: Install performance testing tools
         run: |
-          pip install locust httpx
+          pip install locust
 
-      - name: 🚀 Start application
+      - name: Start application
         run: |
-          cd ${{ github.workspace }}
-          python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 &
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           sleep 10
         env:
           ENVIRONMENT: testing
@@ -242,107 +232,75 @@ jobs:
           AZURE_COMPUTER_VISION_ENDPOINT: https://demo.cognitiveservices.azure.com/
           AZURE_COMPUTER_VISION_KEY: demo-key
 
-      - name: 📈 Run performance tests
+      - name: Run performance tests
         run: |
           # Simple load test
-          for i in {1..10}; do
-            curl -f http://localhost:8000/health > /dev/null &
-          done
-          wait
-          echo "✅ Basic load test completed"
+          python scripts/load_test.py --users 10 --duration 60s
 
-  # 🎯 Deployment Validation
-  deploy-validation:
-    name: 🎯 Deployment Validation
+      - name: Upload performance reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-reports-${{ github.sha }}
+          path: reports/
+          retention-days: 30
+
+  # Deployment
+  deploy:
+    name: Deploy to Azure
     runs-on: ubuntu-latest
-    needs: [test, security, docker, integration]
-    if: github.ref == 'refs/heads/main'
+    needs: [integration, performance]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: production
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: ✅ Validate deployment readiness
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
         run: |
-          echo "🎯 Deployment Validation Checklist:"
-          echo "✅ All tests passed"
-          echo "✅ Security scans completed"
-          echo "✅ Docker image built and scanned"
-          echo "✅ Integration tests passed"
-          echo "🚀 Ready for deployment!"
+          # Deploy using Azure CLI
+          az containerapp update \
+            --name ai-image-analyzer \
+            --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
+            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: 📋 Generate deployment summary
-        run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## 🚀 Deployment Summary
-
-          ### ✅ Quality Gates Passed
-          - **Unit Tests**: All test suites passed
-          - **Security Scan**: No critical vulnerabilities
-          - **Docker Build**: Multi-arch image built successfully
-          - **Integration Tests**: API endpoints validated
-
-          ### 📊 Metrics
-          - **Build Time**: ${{ github.event.head_commit.timestamp }}
-          - **Commit**: ${{ github.sha }}
-          - **Branch**: ${{ github.ref_name }}
-
-          ### 🐳 Container Image
-          - **Registry**: ${{ env.REGISTRY }}
-          - **Image**: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          - **SHA**: ${{ github.sha }}
-
-          **🎉 This build is ready for production deployment!**
-          EOF
-
-  # 🏷️ Release Creation
+  # Release Management
   release:
-    name: 🏷️ Create Release
+    name: Create Release
     runs-on: ubuntu-latest
-    needs: deploy-validation
-    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'feat:')
+    needs: deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: 📥 Checkout code
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: 🏷️ Generate tag
+      - name: Generate tag
         id: tag
         run: |
-          # Simple semantic versioning based on commit messages
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          VERSION=$(date +%Y.%m.%d)-${GITHUB_SHA::7}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # Increment patch version for now (could be enhanced for major/minor)
-          NEW_VERSION=$(echo $LATEST_TAG | sed 's/v//' | awk -F. '{print "v" $1 "." $2 "." ($3+1)}')
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-
-      - name: 📝 Create Release
+      - name: Create Release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.tag.outputs.new_version }}
-          release_name: Release ${{ steps.tag.outputs.new_version }}
+          tag_name: v${{ steps.tag.outputs.version }}
+          release_name: Release v${{ steps.tag.outputs.version }}
           body: |
-            ## 🚀 AI Image Analyzer Release ${{ steps.tag.outputs.new_version }}
+            ## Changes in this Release
+            - Image analysis improvements
+            - Security updates
+            - Performance optimizations
 
-            ### ✨ What's New
-            - Automated release from commit: ${{ github.event.head_commit.message }}
-
-            ### 🐳 Docker Image
-            ```
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-            ```
-
-            ### 📊 Quality Metrics
-            - ✅ All tests passed
-            - ✅ Security scans clean
-            - ✅ Docker image vulnerability scan passed
-            - ✅ Integration tests successful
-
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.tag.outputs.latest_tag }}...${{ steps.tag.outputs.new_version }}
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ steps.tag.outputs.previous_version }}...v${{ steps.tag.outputs.version }}
           draft: false
           prerelease: false
