@@ -1,16 +1,50 @@
 """
-🎯 Simplified FastAPI Rate Limiting - Working Implementation
+🎯 AI Image Analyzer - Enterprise FastAPI Backend
 
-This is a working version of rate limiting with FastAPI that you can actually test.
-Focus on the core patterns without complex imports.
+Production-ready FastAPI application with rate limiting, Azure integration,
+and comprehensive monitoring for enterprise deployment.
 """
 
+import logging
+import os
 import time
 from datetime import datetime
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, File, Request, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+# Azure Application Insights (only import if connection string is available)
+try:
+    if os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING"):
+        from opencensus.ext.azure import metrics_exporter
+        from opencensus.ext.azure.log_exporter import AzureLogHandler
+        from opencensus.ext.fastapi import FastAPIMiddleware
+        from opencensus.stats import aggregation as aggregation_module
+        from opencensus.stats import measure as measure_module
+        from opencensus.stats import stats as stats_module
+        from opencensus.stats import view as view_module
+        from opencensus.tags import tag_map as tag_map_module
+
+        # Configure logging
+        logger = logging.getLogger(__name__)
+        logger.addHandler(
+            AzureLogHandler(
+                connection_string=os.getenv("APPLICATIONINSIGHTS_CONNECTION_STRING")
+            )
+        )
+        logger.setLevel(logging.INFO)
+
+        AZURE_MONITORING_ENABLED = True
+    else:
+        AZURE_MONITORING_ENABLED = False
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+except ImportError:
+    AZURE_MONITORING_ENABLED = False
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
 
 
 # Simple in-memory rate limiting
@@ -89,26 +123,94 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
 
+# Configuration from environment
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # Create FastAPI app
 app = FastAPI(
-    title="Simple Rate Limiting Demo",
-    description="Working rate limiting with FastAPI",
-    version="1.0.0",
+    title="AI Image Analyzer API",
+    description="Enterprise-grade AI Image Analyzer with rate limiting and Azure integration",
+    version="2.0.0",
+    docs_url="/docs" if ENVIRONMENT == "development" else None,
+    redoc_url="/redoc" if ENVIRONMENT == "development" else None,
 )
 
-# Add middleware
+# CORS Configuration
+allowed_origins = [
+    FRONTEND_URL,
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:5173",
+]
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# Add Azure monitoring middleware if available
+if AZURE_MONITORING_ENABLED:
+    try:
+        app.add_middleware(FastAPIMiddleware)
+        logger.info("Azure Application Insights monitoring enabled")
+    except Exception as e:
+        logger.warning(f"Failed to enable Azure monitoring: {e}")
+
+# Add rate limiting middleware
 app.add_middleware(RateLimitMiddleware)
 
 
 @app.get("/health")
 async def health_check():
     """Health check - no rate limits."""
-    return {
+    import psutil
+
+    # Get system metrics
+    cpu_percent = psutil.cpu_percent(interval=1)
+    memory = psutil.virtual_memory()
+    disk = psutil.disk_usage("/")
+
+    health_data = {
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat(),
-        "service": "Simple Rate Limiting Demo",
-        "version": "1.0.0",
+        "service": "AI Image Analyzer API",
+        "version": "2.0.0",
+        "environment": ENVIRONMENT,
+        "system": {
+            "cpu_percent": cpu_percent,
+            "memory_percent": memory.percent,
+            "disk_percent": (disk.used / disk.total) * 100,
+            "uptime_seconds": time.time() - psutil.boot_time()
+            if hasattr(psutil, "boot_time")
+            else None,
+        },
+        "azure_monitoring": AZURE_MONITORING_ENABLED,
+        "rate_limiting": {
+            "active_users": len(rate_limiter.requests),
+            "algorithm": "sliding_window",
+        },
     }
+
+    # Log health check if Azure monitoring is enabled
+    if AZURE_MONITORING_ENABLED:
+        logger.info(
+            "Health check performed",
+            extra={
+                "custom_dimensions": {
+                    "cpu_percent": cpu_percent,
+                    "memory_percent": memory.percent,
+                    "active_users": len(rate_limiter.requests),
+                }
+            },
+        )
+
+    return health_data
 
 
 @app.get("/api/test")
@@ -147,25 +249,139 @@ async def rate_limit_status(request: Request):
     }
 
 
+@app.post("/api/analyze-image")
+async def analyze_image(file: UploadFile = File(...)):
+    """Analyze uploaded image with rate limiting."""
+    start_time = time.time()
+
+    try:
+        # Validate file type
+        if not file.content_type or not file.content_type.startswith("image/"):
+            if AZURE_MONITORING_ENABLED:
+                logger.warning(
+                    "Invalid file type uploaded",
+                    extra={
+                        "custom_dimensions": {
+                            "content_type": file.content_type,
+                            "filename": file.filename,
+                        }
+                    },
+                )
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid file type. Please upload an image."},
+            )
+
+        # Read file content (in production, this would go to Azure Storage)
+        content = await file.read()
+        file_size = len(content)
+
+        # Mock AI analysis (in production, this would use Azure Computer Vision)
+        processing_time = int((time.time() - start_time) * 1000)
+
+        analysis_result = {
+            "filename": file.filename,
+            "file_size": file_size,
+            "content_type": file.content_type,
+            "analysis": {
+                "objects_detected": ["person", "car", "building"],
+                "confidence_scores": [0.95, 0.87, 0.92],
+                "description": "This image contains a person standing next to a car in front of a building",
+                "colors": ["blue", "red", "gray"],
+                "text_detected": [],
+                "faces_detected": 1,
+                "adult_content": False,
+                "racy_content": False,
+            },
+            "metadata": {
+                "analyzed_at": datetime.utcnow().isoformat(),
+                "processing_time_ms": processing_time,
+                "model_version": "2.0.0",
+                "environment": ENVIRONMENT,
+            },
+        }
+
+        # Log successful analysis if Azure monitoring is enabled
+        if AZURE_MONITORING_ENABLED:
+            logger.info(
+                "Image analysis completed",
+                extra={
+                    "custom_dimensions": {
+                        "filename": file.filename,
+                        "file_size": file_size,
+                        "content_type": file.content_type,
+                        "processing_time_ms": processing_time,
+                        "objects_count": len(
+                            analysis_result["analysis"]["objects_detected"]
+                        ),
+                    }
+                },
+            )
+
+        return analysis_result
+
+    except Exception as e:
+        processing_time = int((time.time() - start_time) * 1000)
+        if AZURE_MONITORING_ENABLED:
+            logger.error(
+                "Image analysis failed",
+                extra={
+                    "custom_dimensions": {
+                        "error": str(e),
+                        "processing_time_ms": processing_time,
+                        "filename": file.filename if file else "unknown",
+                    }
+                },
+            )
+        raise
+
+
+@app.get("/api/demo-info")
+async def get_demo_info():
+    """Get information about the demo capabilities."""
+    return {
+        "demo_features": [
+            "Image upload and analysis",
+            "Rate limiting (10 requests/minute)",
+            "Mock AI analysis results",
+            "Enterprise error handling",
+            "Azure cloud deployment",
+            "CORS configuration",
+            "Health monitoring",
+        ],
+        "rate_limiting": {
+            "limit": 10,
+            "window_seconds": 60,
+            "algorithm": "sliding_window",
+        },
+        "supported_formats": ["image/jpeg", "image/png", "image/gif", "image/bmp"],
+        "max_file_size": "10MB",
+        "environment": ENVIRONMENT,
+        "version": "2.0.0",
+    }
+
+
 if __name__ == "__main__":
     print(
         """
-🎯 Simple Rate Limiting Server Ready!
-====================================
+🎯 AI Image Analyzer API Ready!
+===============================
 
 FEATURES:
-✅ Rate limiting middleware
-✅ 10 requests per minute per IP
-✅ HTTP 429 responses for violations
-✅ Rate limit headers (X-RateLimit-*)
-✅ Status endpoint to check limits
+✅ Image upload and analysis
+✅ Rate limiting (10 requests/minute)
+✅ Azure integration ready
+✅ CORS configured
+✅ Enterprise error handling
+✅ Health monitoring
 
-TESTING:
-1. Start server: uvicorn simple_rate_limiting:app --reload --port 8003
-2. Test: curl http://localhost:8003/health
-3. Rapid test: for i in {1..15}; do curl http://localhost:8003/api/test; done
-4. Check status: curl http://localhost:8003/api/status
+ENDPOINTS:
+- GET  /health           - Health check
+- GET  /api/test         - Rate limit test
+- GET  /api/status       - Rate limit status
+- POST /api/analyze-image - Image analysis
+- GET  /api/demo-info    - Demo information
 
-🚀 This shows core rate limiting patterns in action!
+🚀 Ready for Azure deployment!
     """
     )
