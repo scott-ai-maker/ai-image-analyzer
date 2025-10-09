@@ -169,6 +169,30 @@ This architecture scales to handle:
 
 Perfect for **senior developer interviews** demonstrating real-world enterprise experience.
 
+## 🎬 Live Demo for Employers
+
+### **One-Command Demo**
+```bash
+# Run the complete enterprise demo (5-10 minutes)
+./demo.sh
+```
+
+This demonstrates:
+- **Rate limiting** in action (HTTP 429 responses)
+- **Health monitoring** for Kubernetes readiness
+- **Container architecture** with security hardening
+- **Auto-scaling configuration** for production load
+- **Enterprise patterns** used by major tech companies
+
+### **Quick Demo (30 seconds)**
+```bash
+# Start application and test rate limiting
+python3 -m uvicorn app.main:app --port 8000 &
+sleep 2
+curl http://localhost:8000/health
+for i in {1..12}; do curl -w "%{http_code} " http://localhost:8000/api/test; done
+```
+
 ## 🛠️ Development
 
 ### Local Setup
